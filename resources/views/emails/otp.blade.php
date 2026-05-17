@@ -1,5 +1,5 @@
 <x-mail::message>
-# Thawani security code
+# ecommerce security code
 
 Hello,
 

@@ -47,3 +47,4 @@ Route::get('/inventory', [InventoryController::class, 'index'])->middleware('aut
 Route::put('/inventory/{id}', [InventoryController::class, 'update'])->middleware('auth:admin');
 
 Route::get('/reports/daily-sales', [ReportsController::class, 'dailySales'])->middleware('auth:admin');
+Route::post('/reports/daily-sales', [ReportsController::class, 'generateDailySales'])->middleware('auth:admin');

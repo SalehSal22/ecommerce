@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\recieptEmail;
 use App\Models\Cart;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -68,7 +69,7 @@ class OrderService
 
                     $product->stock -= $item->quantity;
                     $product->save();
-
+    
                     $price = $product->price;
                     $subtotal = $price * $item->quantity;
                     $total += $subtotal;
@@ -90,7 +91,7 @@ class OrderService
             });
 
             $order->load('items.product');
-
+            recieptEmail::dispatch($order);
             return $order;
         } finally {
             foreach ($locks as $lock) {

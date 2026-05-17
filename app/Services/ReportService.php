@@ -2,20 +2,22 @@
 
 namespace App\Services;
 
-use App\Models\Order;
+use App\Jobs\MakeReports;
+use App\Models\Report;
 
 class ReportService
 {
-    public function dailySales(): array
+    public function generateDailySales(): void
     {
-        $today = now()->toDateString();
+        MakeReports::dispatch();
+    }
 
-        $orders = Order::whereDate('created_at', $today)->get();
+    public function dailySales(?string $date = null): Report
+    {
+        if ($date) {
+            return Report::whereDate('date', $date)->firstOrFail();
+        }
 
-        return [
-            'date' => $today,
-            'orders_count' => $orders->count(),
-            'total_sales' => $orders->sum('total'),
-        ];
+        return Report::orderByDesc('date')->firstOrFail();
     }
 }

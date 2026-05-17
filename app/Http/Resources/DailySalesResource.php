@@ -13,9 +13,9 @@ class DailySalesResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'date' => $this->resource['date'],
-            'orders_count' => $this->resource['orders_count'],
-            'total_sales' => $this->resource['total_sales'],
+            'date' => data_get($this->resource, 'date'),
+            'orders_count' => data_get($this->resource, 'orders_count'),
+            'total_sales' => data_get($this->resource, 'total_sales'),
         ];
     }
 }

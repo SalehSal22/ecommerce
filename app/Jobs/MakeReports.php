@@ -23,17 +23,24 @@ class MakeReports implements ShouldQueue
      * Execute the job.
      */
     public function handle()
-    {   
+    {
         $today = now()->toDateString();
+        $totalOrders = 0;
+        $finalTotalSales = 0;
+        Order::whereDate('created_at', $today)->chunkById(100, function ($orders) use (&$totalOrders, &$finalTotalSales) {
+            $ordersCount =  $orders->count();
+            $totalSales =  $orders->sum('total');
+            $totalOrders += $ordersCount;
+            $finalTotalSales += $totalSales;
+        });
 
-        $ordersQuery = Order::whereDate('created_at', $today);
-
-        $ordersCount =  $ordersQuery->count();
-        $totalSales =  $ordersQuery->sum('total');
 
         Report::updateOrCreate(
             ['date' => $today],
-            ['orders_count' => $ordersCount, 'total_sales' => $totalSales]
+            [
+                'orders_count' => $totalOrders,
+                'total_sales' => $finalTotalSales
+            ]
         );
     }
 }

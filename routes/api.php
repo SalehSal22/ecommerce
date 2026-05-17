@@ -13,14 +13,14 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:10,1');
     Route::post('/register/verify-otp', [AuthController::class, 'verifyOtp'])->middleware('throttle:10,1');
-    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:logins');
     Route::post('/refresh', [AuthController::class, 'refresh'])->middleware('throttle:20,1');
     Route::post('/logout', [AuthController::class, 'logout'])->middleware('throttle:30,1');
     Route::get('/profile', [AuthController::class, 'profile'])->middleware('auth:api');
 });
 
 Route::prefix('admin/auth')->group(function () {
-    Route::post('/login', [AdminAuthController::class, 'login'])->middleware('throttle:10,1');
+    Route::post('/login', [AdminAuthController::class, 'login'])->middleware('throttle:logins');
     Route::post('/logout', [AdminAuthController::class, 'logout'])->middleware('auth:admin');
 });
 
@@ -34,11 +34,11 @@ Route::prefix('products')->group(function () {
 
 Route::middleware('auth:api')->group(function () {
     Route::get('/cart', [CartController::class, 'index']);
-    Route::post('/cart', [CartController::class, 'store']);
+    Route::post('/cart', [CartController::class, 'store'])->middleware('throttle:cart');
     Route::put('/cart/{id}', [CartController::class, 'update']);
     Route::delete('/cart/{id}', [CartController::class, 'destroy']);
 
-    Route::post('/orders', [OrdersController::class, 'store']);
+    Route::post('/orders', [OrdersController::class, 'store'])->middleware('throttle:orders');
     Route::get('/orders', [OrdersController::class, 'index']);
     Route::get('/orders/{id}', [OrdersController::class, 'show']);
 });
@@ -47,4 +47,4 @@ Route::get('/inventory', [InventoryController::class, 'index'])->middleware('aut
 Route::put('/inventory/{id}', [InventoryController::class, 'update'])->middleware('auth:admin');
 
 Route::get('/reports/daily-sales', [ReportsController::class, 'dailySales'])->middleware('auth:admin');
-Route::post('/reports/daily-sales', [ReportsController::class, 'generateDailySales'])->middleware('auth:admin');
+Route::post('/reports/daily-sales', [ReportsController::class, 'generateDailySales'])->middleware('auth:admin')->middleware('throttle:reports');

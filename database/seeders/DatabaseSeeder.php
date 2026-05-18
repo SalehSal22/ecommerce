@@ -30,7 +30,7 @@ class DatabaseSeeder extends Seeder
             'email' => $user->email,
             'password' => $password,
         ]);
-        file_put_contents(base_path('users.json'), $k6Users->toJson(JSON_PRETTY_PRINT));
+        file_put_contents(base_path('our-tests/stress-test/users.json'), $k6Users->toJson(JSON_PRETTY_PRINT));
 
         // 2. Seed Admins
         $admins = collect([

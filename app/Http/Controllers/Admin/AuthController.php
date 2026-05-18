@@ -21,13 +21,14 @@ class AuthController extends Controller
                 'status' => 'error',
                 'message' => $e->getMessage(),
             ], 401);
-        } catch (Throwable $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Unable to login.',
-            ], 500);
         }
-
+        /* } catch (Throwable $e) { */
+        /*     return response()->json([ */
+        /*         'status' => 'error', */
+        /*         'message' => 'Unable to login.', */
+        /*     ], 500); */
+        /* } */
+        /**/
         return response()->json([
             'status' => 'success',
             'data' => [

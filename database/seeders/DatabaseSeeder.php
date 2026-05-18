@@ -3,15 +3,12 @@
 namespace Database\Seeders;
 
 use App\Models\Admin;
-use App\Models\Cart;
-use App\Models\CartItem;
-use App\Models\Order;
-use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class DatabaseSeeder extends Seeder
 {
@@ -22,7 +19,20 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $users = User::factory(10)->create();
+        // 1. Seed 100 Users with a known password
+        $password = 'password123';
+        $users = User::factory(100)->create([
+            'password' => Hash::make($password),
+        ]);
+
+        // Export user credentials to JSON for the k6 stress test
+        $k6Users = $users->map(fn(User $user) => [
+            'email' => $user->email,
+            'password' => $password,
+        ]);
+        file_put_contents(base_path('users.json'), $k6Users->toJson(JSON_PRETTY_PRINT));
+
+        // 2. Seed Admins
         $admins = collect([
             ['name' => 'Admin 1', 'email' => 'admin1@example.com'],
             ['name' => 'Admin 2', 'email' => 'admin2@example.com'],
@@ -34,49 +44,37 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Admin 8', 'email' => 'admin8@example.com'],
             ['name' => 'Admin 9', 'email' => 'admin9@example.com'],
             ['name' => 'Admin 10', 'email' => 'admin10@example.com'],
-        ])->map(fn (array $admin) => Admin::create([
+        ])->map(fn(array $admin) => Admin::create([
             'name' => $admin['name'],
             'email' => $admin['email'],
             'password' => Hash::make('password'),
         ]));
-        $products = Product::factory(10)->create();
 
-        $carts = $users->map(fn (User $user) => Cart::create([
-            'user_id' => $user->id,
-        ]));
+        // 3. Seed 20 Products
+        // Note: Make sure your ProductFactory sets a limited stock (e.g., 'stock' => 50)
+        // to properly test the overselling database locks.
+        $products = Product::factory(20)->create();
 
-        $productPool = $products->values();
+        // 4. Seed 10,000 Orders dated now (batched to avoid memory issues)
+        $now = now()->toDateTimeString();
+        $batchSize = 500; // insert in batches to keep memory usage low
+        $totalOrders = 10000;
 
-        foreach ($carts as $index => $cart) {
-            $product = $productPool[$index % $productPool->count()];
-            $quantity = random_int(1, 3);
+        for ($i = 0; $i < $totalOrders; $i += $batchSize) {
+            $batch = [];
+            $limit = min($batchSize, $totalOrders - $i);
 
-            CartItem::create([
-                'cart_id' => $cart->id,
-                'product_id' => $product->id,
-                'quantity' => $quantity,
-            ]);
-        }
+            for ($j = 0; $j < $limit; $j++) {
+                $batch[] = [
+                    'user_id' => $users->random()->id,
+                    'total' => mt_rand(1000, 50000) / 100, // random total between 10.00 and 500.00
+                    'status' => 'placed',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
 
-        foreach ($users as $index => $user) {
-            $product = $productPool[$index % $productPool->count()];
-            $quantity = random_int(1, 3);
-            $price = (float) $product->price;
-            $subtotal = $price * $quantity;
-
-            $order = Order::create([
-                'user_id' => $user->id,
-                'total' => $subtotal,
-                'status' => 'placed',
-            ]);
-
-            OrderItem::create([
-                'order_id' => $order->id,
-                'product_id' => $product->id,
-                'quantity' => $quantity,
-                'price' => $price,
-                'subtotal' => $subtotal,
-            ]);
+            DB::table('orders')->insert($batch);
         }
     }
 }

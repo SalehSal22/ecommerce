@@ -44,9 +44,9 @@ class OrderService
 
             $items = $cart->items()->orderBy('product_id')->get();
             foreach ($items as $item) {
-                $lock = Cache::lock('product_' . $item->product->id, 10);
+                $lock = Cache::lock('product_' . $item->product->id, 13);
 
-                $lock->block(5);
+                $lock->block(7);
 
                 $locks[] = $lock;
             }
@@ -69,7 +69,7 @@ class OrderService
 
                     $product->stock -= $item->quantity;
                     $product->save();
-    
+
                     $price = $product->price;
                     $subtotal = $price * $item->quantity;
                     $total += $subtotal;

@@ -56,16 +56,17 @@ class OrdersController extends Controller
             $order = $this->service->placeOrder($request->user()->id);
 
             return (new OrderResource($order))->response()->setStatusCode(201);
+
+        } catch (LockTimeoutException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Order processing is busy. Please retry.',
+            ], 409);
         } catch (DomainException $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => $e->getMessage(),
             ], 422);
-        } catch (Throwable $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Unable to place order.',
-            ], 500);
         }
     }
 }

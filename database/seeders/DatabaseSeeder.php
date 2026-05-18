@@ -3,10 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\Admin;
-use App\Models\Cart;
-use App\Models\CartItem;
-use App\Models\Order;
-use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -22,7 +18,20 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $users = User::factory(10)->create();
+        // 1. Seed 100 Users with a known password
+        $password = 'password123';
+        $users = User::factory(100)->create([
+            'password' => Hash::make($password),
+        ]);
+
+        // Export user credentials to JSON for the k6 stress test
+        $k6Users = $users->map(fn (User $user) => [
+            'email' => $user->email,
+            'password' => $password,
+        ]);
+        file_put_contents(base_path('users.json'), $k6Users->toJson(JSON_PRETTY_PRINT));
+
+        // 2. Seed Admins
         $admins = collect([
             ['name' => 'Admin 1', 'email' => 'admin1@example.com'],
             ['name' => 'Admin 2', 'email' => 'admin2@example.com'],
@@ -39,44 +48,13 @@ class DatabaseSeeder extends Seeder
             'email' => $admin['email'],
             'password' => Hash::make('password'),
         ]));
-        $products = Product::factory(10)->create();
 
-        $carts = $users->map(fn (User $user) => Cart::create([
-            'user_id' => $user->id,
-        ]));
+        // 3. Seed 20 Products
+        // Note: Make sure your ProductFactory sets a limited stock (e.g., 'stock' => 50)
+        // to properly test the overselling database locks.
+        $products = Product::factory(20)->create();
 
-        $productPool = $products->values();
-
-        foreach ($carts as $index => $cart) {
-            $product = $productPool[$index % $productPool->count()];
-            $quantity = random_int(1, 3);
-
-            CartItem::create([
-                'cart_id' => $cart->id,
-                'product_id' => $product->id,
-                'quantity' => $quantity,
-            ]);
-        }
-
-        foreach ($users as $index => $user) {
-            $product = $productPool[$index % $productPool->count()];
-            $quantity = random_int(1, 3);
-            $price = (float) $product->price;
-            $subtotal = $price * $quantity;
-
-            $order = Order::create([
-                'user_id' => $user->id,
-                'total' => $subtotal,
-                'status' => 'placed',
-            ]);
-
-            OrderItem::create([
-                'order_id' => $order->id,
-                'product_id' => $product->id,
-                'quantity' => $quantity,
-                'price' => $price,
-                'subtotal' => $subtotal,
-            ]);
-        }
+        // Carts, CartItems, Orders, and OrderItems have been intentionally removed
+        // so the k6 stress test can generate them organically from a clean slate.
     }
 }

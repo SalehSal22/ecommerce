@@ -61,11 +61,6 @@ class OrdersController extends Controller
                 'status' => 'error',
                 'message' => $e->getMessage(),
             ], 422);
-        } catch (Throwable $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Unable to place order.',
-            ], 500);
         }
     }
 }
